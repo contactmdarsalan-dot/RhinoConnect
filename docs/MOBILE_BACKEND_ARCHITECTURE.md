@@ -1,8 +1,8 @@
 # Mobile and Backend Architecture
 
-## Target Repository Shape
+## Current Repository Shape
 
-The current Next.js app can become the web console while new mobile and backend modules are added.
+The current Next.js app now lives in `apps/web`. Mobile, backend, worker, contracts, and infrastructure folders are scaffolded for the next phases.
 
 ```text
 RhinoConnect/
@@ -21,7 +21,7 @@ RhinoConnect/
   docs/
 ```
 
-Do not move the current Next.js files until the monorepo migration is planned and tested. The first code milestone can add the new folders while keeping the existing app working.
+The web app should continue to work from the repo root through the workspace scripts while the mobile and backend modules are built.
 
 ## Flutter App Structure
 

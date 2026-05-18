@@ -15,6 +15,21 @@ Smart Booking + Customer Engagement Platform for tourism, hospitality, and servi
 - Backend API routes for all major data workflows
 - Persistent local storage with atomic writes for demo/development
 
+## Repository Structure
+
+```text
+apps/
+  web/                  # Current Next.js provider/admin and public booking app
+  mobile/               # Flutter app placeholder for the marketplace phase
+services/
+  api/                  # Django API placeholder
+  worker/               # Celery worker placeholder
+packages/
+  contracts/            # Shared API contract placeholder
+infra/                  # Docker, Terraform, and Nginx placeholders
+docs/                   # Marketplace blueprint and implementation roadmap
+```
+
 ## Tech Stack
 
 - Next.js App Router
@@ -32,6 +47,8 @@ npm install
 npm run dev
 ```
 
+The root scripts currently run the `apps/web` workspace.
+
 Open:
 
 - Admin login: `http://localhost:3000`
@@ -45,17 +62,17 @@ Demo login is pre-filled on the home page.
 
 The backend uses Next.js route handlers under `src/app/api`.
 
-Core layers:
+Web app layers:
 
-- `src/server/validation.ts`: Zod schemas for incoming API payloads
-- `src/server/repository.ts`: business logic, analytics, availability checks, customer stats
-- `src/server/storage.ts`: persistent JSON storage with serialized writes
-- `src/server/seed.ts`: initial demo dataset and service catalog
+- `apps/web/src/server/validation.ts`: Zod schemas for incoming API payloads
+- `apps/web/src/server/repository.ts`: business logic, analytics, availability checks, customer stats
+- `apps/web/src/server/storage.ts`: persistent JSON storage with serialized writes
+- `apps/web/src/server/seed.ts`: initial demo dataset and service catalog
 
 The current local data file is created automatically at:
 
 ```text
-data/rhinopeak-connect.json
+apps/web/data/rhinopeak-connect.json
 ```
 
 Set `RPC_DATA_DIR` to move local storage elsewhere.
@@ -82,7 +99,7 @@ Set `RPC_DATA_DIR` to move local storage elsewhere.
 
 The MVP is functional without external services, but the code is organized so production scaling is straightforward:
 
-- Replace `src/server/storage.ts` with PostgreSQL access through Prisma, Drizzle, or node-postgres.
+- Replace `apps/web/src/server/storage.ts` with PostgreSQL access through Prisma, Drizzle, or node-postgres.
 - Add indexes for `business_id`, `customer_id`, `booking_ref`, `check_in`, `check_out`, `status`, and `created_at`.
 - Put Redis in front of read-heavy dashboard aggregates and availability lookups.
 - Move automation delivery to a queue worker for WhatsApp, email, and reminders.

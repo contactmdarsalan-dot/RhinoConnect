@@ -19,7 +19,7 @@ Keep this app stable while the marketplace version is built.
 
 ## Step 1: Document the Marketplace Foundation
 
-Status: in progress.
+Status: done.
 
 Deliverables:
 
@@ -32,6 +32,8 @@ Deliverables:
 Done means the repo explains what will be built before major new code is added.
 
 ## Step 2: Convert Repo to a Monorepo
+
+Status: done.
 
 Goal: create a clean structure for web, mobile, backend, shared contracts, and infrastructure.
 
