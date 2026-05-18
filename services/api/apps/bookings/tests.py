@@ -8,6 +8,7 @@ from rest_framework.test import APITestCase
 from apps.bookings.models import Booking
 from apps.categories.models import Category
 from apps.notifications.models import Notification
+from apps.payments.models import Payment
 from apps.providers.models import ProviderProfile
 from apps.reviews.models import Review
 from apps.services.models import ServiceListing, ServiceMedia
@@ -85,6 +86,20 @@ class MarketplaceApiTests(APITestCase):
         self.assertIn("token", response.data)
         self.assertEqual(response.data["user"]["email"], "new.customer@example.com")
 
+    def test_auth_logout_invalidates_token(self):
+        login_response = self.client.post(
+            "/api/v1/auth/login/",
+            {"email": "customer@example.com", "password": "StrongPass123!"},
+            format="json",
+        )
+        token = login_response.data["token"]
+
+        logout_response = self.client.post("/api/v1/auth/logout/", HTTP_AUTHORIZATION=f"Token {token}")
+
+        self.assertEqual(logout_response.status_code, status.HTTP_204_NO_CONTENT)
+        me_response = self.client.get("/api/v1/auth/me/", HTTP_AUTHORIZATION=f"Token {token}")
+        self.assertEqual(me_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_public_service_discovery_includes_media(self):
         response = self.client.get("/api/v1/services/", {"search": "wellness"})
 
@@ -93,6 +108,15 @@ class MarketplaceApiTests(APITestCase):
         service = response.data["results"][0]
         self.assertEqual(service["title"], "Yoga & Wellness Retreat")
         self.assertEqual(len(service["media"]), 1)
+
+    def test_public_service_discovery_filters_by_city_and_price(self):
+        response = self.client.get(
+            "/api/v1/services/",
+            {"city": "kath", "category_slug": "wellness", "min_price": "10000", "max_price": "13000"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
 
     def test_customer_can_create_booking_request(self):
         self.client.force_authenticate(self.customer)
@@ -117,6 +141,27 @@ class MarketplaceApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], Booking.Status.CONFIRMED)
+
+    def test_customer_can_create_and_complete_test_payment_intent(self):
+        self.client.force_authenticate(self.customer)
+        booking_response = self.client.post("/api/v1/bookings/", self.booking_payload(), format="json")
+        booking_id = booking_response.data["id"]
+
+        intent_response = self.client.post(
+            "/api/v1/payments/intents/",
+            {"booking": booking_id, "payment_kind": "deposit", "gateway": "test"},
+            format="json",
+        )
+        self.assertEqual(intent_response.status_code, status.HTTP_201_CREATED)
+        payment_id = intent_response.data["payment"]["id"]
+        self.assertEqual(intent_response.data["payment"]["amount"], "3600.00")
+
+        success_response = self.client.post(f"/api/v1/payments/{payment_id}/mark-succeeded/", {}, format="json")
+        self.assertEqual(success_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(success_response.data["status"], Payment.Status.SUCCEEDED)
+
+        booking = Booking.objects.get(id=booking_id)
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PARTIAL)
 
     def test_customer_can_review_completed_booking(self):
         booking = Booking.objects.create(

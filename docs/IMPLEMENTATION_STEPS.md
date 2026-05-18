@@ -115,6 +115,8 @@ Implemented:
 
 ## Step 5: Add Payments
 
+Status: in progress.
+
 Goal: support deposits and full payments safely.
 
 Deliverables:
@@ -132,7 +134,25 @@ Done means:
 - Failed payment does not confirm booking
 - Webhooks are signed and verified
 
+Implemented:
+
+- Test/manual payment intent endpoint
+- Deposit/full amount calculation
+- Payment success action for local test mode
+- Booking payment status sync to partial/paid
+- Provider payout record creation after full payment
+- Payment notification creation
+
+Remaining:
+
+- Stripe test integration
+- Signed Stripe webhook handling
+- eSewa/Khalti adapter implementation
+- Failure/refund webhook flows
+
 ## Step 6: Build Flutter MVP
+
+Status: started.
 
 Goal: customer mobile app first.
 
@@ -151,6 +171,19 @@ Deliverables:
 Done means:
 
 - A customer can register, browse, book, and view booking status from mobile.
+
+Implemented:
+
+- Flutter source scaffold in `apps/mobile`
+- Premium customer auth, discovery, service detail, gallery preview, booking, trips, and profile screens
+- API client structure for Django integration
+
+Remaining:
+
+- Install Flutter SDK in the environment
+- Connect screens to live API calls
+- Add mobile automated tests
+- Add native Android/iOS generated project folders with `flutter create`
 
 ## Step 7: Build Provider Mobile/Web Flows
 

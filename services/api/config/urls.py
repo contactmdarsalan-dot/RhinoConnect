@@ -6,7 +6,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
-from apps.accounts.views import LoginView, MeView, RegisterView
+from apps.accounts.views import LoginView, LogoutView, MeView, RegisterView
 from apps.bookings.views import BookingViewSet
 from apps.categories.views import CategoryViewSet
 from apps.notifications.views import NotificationViewSet
@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/v1/health/", health, name="api-health"),
     path("api/v1/auth/register/", RegisterView.as_view(), name="api-register"),
     path("api/v1/auth/login/", LoginView.as_view(), name="api-login"),
+    path("api/v1/auth/logout/", LogoutView.as_view(), name="api-logout"),
     path("api/v1/auth/me/", MeView.as_view(), name="api-me"),
     path("api/v1/", include(router.urls)),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

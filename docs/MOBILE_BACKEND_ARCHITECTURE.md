@@ -8,7 +8,7 @@ The current Next.js app now lives in `apps/web`. Mobile, backend, worker, contra
 RhinoConnect/
   apps/
     web/                 # Current Next.js admin and public booking app
-    mobile/              # Flutter customer/provider mobile app
+    mobile/              # Flutter customer app source
   services/
     api/                 # Django REST API
     worker/              # Celery workers for async jobs
@@ -29,24 +29,20 @@ The web app should continue to work from the repo root through the workspace scr
 apps/mobile/lib/
   main.dart
   app/
-    router.dart
+    rhino_connect_app.dart
     theme.dart
-    config.dart
+    app_state.dart
   features/
     auth/
     discovery/
     service_detail/
     booking/
-    payments/
-    chat/
-    provider_dashboard/
+    media/
+    trips/
     profile/
   core/
     api/
     models/
-    storage/
-    location/
-    notifications/
     widgets/
 ```
 

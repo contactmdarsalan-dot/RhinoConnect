@@ -18,9 +18,13 @@ Django REST Framework backend for the global local-services marketplace.
 - Notifications
 - Admin registrations
 - Token-based customer registration and login
+- Token logout
 - Public marketplace discovery APIs
+- City, country, category slug, provider slug, and price discovery filters
 - Provider-owned service and media CRUD
 - Booking request and status workflow
+- Test/manual payment intent workflow
+- Booking payment status sync
 - Completed-booking review submission
 - Health endpoint
 - OpenAPI schema and Swagger UI
@@ -53,6 +57,7 @@ http://127.0.0.1:8000/api/docs/
 ```text
 POST /api/v1/auth/register/
 POST /api/v1/auth/login/
+POST /api/v1/auth/logout/
 GET/PATCH /api/v1/auth/me/
 GET /api/v1/categories/
 GET/POST /api/v1/providers/
@@ -62,6 +67,8 @@ GET/POST /api/v1/bookings/
 POST /api/v1/bookings/{id}/set-status/
 GET/POST /api/v1/reviews/
 GET /api/v1/payments/
+POST /api/v1/payments/intents/
+POST /api/v1/payments/{id}/mark-succeeded/
 GET /api/v1/payouts/
 GET /api/v1/notifications/
 POST /api/v1/notifications/{id}/mark_read/

@@ -4,6 +4,7 @@ from rest_framework import filters, permissions, viewsets
 
 from apps.permissions import IsProviderOwnerOrStaffOrReadOnly, is_staff_user
 
+from .filters import ServiceListingFilter
 from .models import ServiceListing, ServiceMedia
 from .serializers import ServiceListingSerializer, ServiceMediaSerializer
 
@@ -12,7 +13,7 @@ class ServiceListingViewSet(viewsets.ModelViewSet):
     serializer_class = ServiceListingSerializer
     permission_classes = [IsProviderOwnerOrStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["category", "provider", "service_type", "active", "instant_booking_enabled", "currency"]
+    filterset_class = ServiceListingFilter
     search_fields = [
         "title",
         "description",

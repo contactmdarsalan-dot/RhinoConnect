@@ -126,6 +126,7 @@ POST  /api/v1/provider/bookings/{id}/complete
 ```text
 POST /api/v1/payments/intents
 GET  /api/v1/payments/{id}
+POST /api/v1/payments/{id}/mark-succeeded
 POST /api/v1/payments/webhooks/stripe
 POST /api/v1/payments/webhooks/esewa
 POST /api/v1/payments/webhooks/khalti

@@ -14,15 +14,16 @@ Smart Booking + Customer Engagement Platform for tourism, hospitality, and servi
 - Business settings, billing tier UI, and notification channel settings
 - Backend API routes for all major data workflows
 - Persistent local storage with atomic writes for demo/development
+- Flutter customer mobile app scaffold with premium booking UX
 
 ## Repository Structure
 
 ```text
 apps/
   web/                  # Current Next.js provider/admin and public booking app
-  mobile/               # Flutter app placeholder for the marketplace phase
+  mobile/               # Flutter customer app source
 services/
-  api/                  # Django REST API foundation
+  api/                  # Django REST API
   worker/               # Celery worker placeholder
 packages/
   contracts/            # Shared API contract placeholder
@@ -123,6 +124,7 @@ Key marketplace endpoints:
 
 - `POST /api/v1/auth/register/`
 - `POST /api/v1/auth/login/`
+- `POST /api/v1/auth/logout/`
 - `GET/PATCH /api/v1/auth/me/`
 - `GET /api/v1/categories/`
 - `GET/POST /api/v1/providers/`
@@ -131,6 +133,29 @@ Key marketplace endpoints:
 - `GET/POST /api/v1/bookings/`
 - `POST /api/v1/bookings/{id}/set-status/`
 - `GET/POST /api/v1/reviews/`
+- `POST /api/v1/payments/intents/`
+- `POST /api/v1/payments/{id}/mark-succeeded/`
+
+## Mobile App
+
+The Flutter customer MVP source lives in `apps/mobile`.
+
+Current mobile flow:
+
+- Login/register
+- Browse and search services
+- View service detail, image gallery, and full-screen media preview
+- Request a booking
+- Track trips and mark test deposit payment
+- Manage profile shell
+
+Run after installing Flutter:
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
 
 ## Main API Routes
 
