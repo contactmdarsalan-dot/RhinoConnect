@@ -89,6 +89,20 @@ The MVP is functional without external services, but the code is organized so pr
 - Add authentication, tenant isolation, and role-based access before real customer deployment.
 - Keep route pagination limits in place for memory efficiency under high traffic.
 
+## Global Marketplace Roadmap
+
+The next product direction is RhinoConnect as a global local-services marketplace mobile platform.
+
+Read the implementation blueprint in [`docs/`](./docs/README.md):
+
+- [Global marketplace blueprint](./docs/GLOBAL_MARKETPLACE_BLUEPRINT.md)
+- [Mobile and backend architecture](./docs/MOBILE_BACKEND_ARCHITECTURE.md)
+- [Database schema](./docs/DATABASE_SCHEMA.md)
+- [API design](./docs/API_DESIGN.md)
+- [Implementation steps](./docs/IMPLEMENTATION_STEPS.md)
+- [MVP roadmap](./docs/MVP_ROADMAP.md)
+- [DevOps, security, and performance](./docs/DEVOPS_SECURITY.md)
+
 ## Verification
 
 ```bash
