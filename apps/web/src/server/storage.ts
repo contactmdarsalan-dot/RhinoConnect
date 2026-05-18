@@ -1,13 +1,17 @@
-import { Pool, type PoolClient } from 'pg';
+import { randomUUID } from 'node:crypto';
+import { MongoClient, type Db } from 'mongodb';
 import type { ServiceMedia } from '@/lib/types';
 import { createSeedDatabase, type AppDatabase } from './seed';
 
-const databaseUrl = process.env.RPC_DATABASE_URL ?? process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
-const sslEnabled = process.env.PGSSLMODE === 'require' || process.env.POSTGRES_SSL === 'true';
-const schemaLockKey = 'rhinoconnect:web-storage';
+const mongoUri =
+  process.env.RPC_MONGODB_URI ?? process.env.MONGODB_URI ?? process.env.MONGO_URL ?? 'mongodb://127.0.0.1:27017';
+const mongoDbName = process.env.RPC_MONGODB_DB ?? process.env.MONGODB_DB ?? databaseNameFromUri(mongoUri);
+const storageLockId = 'rhinoconnect-web-storage';
+const lockTtlMs = 30_000;
 
-let pool: Pool | null = null;
-let schemaReady: Promise<void> | null = null;
+let mongoClient: MongoClient | null = null;
+let mongoClientPromise: Promise<MongoClient> | null = null;
+let indexesReady: Promise<void> | null = null;
 let writeQueue: Promise<void> = Promise.resolve();
 
 const demoServiceGalleries: Record<string, ServiceMedia[]> = {
@@ -88,36 +92,62 @@ const demoServiceGalleries: Record<string, ServiceMedia[]> = {
   ],
 };
 
-const collectionTables = [
-  'rpc_services',
-  'rpc_availability_blocks',
-  'rpc_customers',
-  'rpc_bookings',
-  'rpc_payments',
-  'rpc_notifications',
-  'rpc_automations',
-] as const;
-
-type CollectionTable = (typeof collectionTables)[number];
-
+type CollectionName =
+  | 'rpc_services'
+  | 'rpc_availability_blocks'
+  | 'rpc_customers'
+  | 'rpc_bookings'
+  | 'rpc_payments'
+  | 'rpc_notifications'
+  | 'rpc_automations';
 type DbRecord = { id: string };
 
-function getPool() {
-  if (!databaseUrl) {
-    throw new Error(
-      'PostgreSQL storage is required. Set RPC_DATABASE_URL, DATABASE_URL, or POSTGRES_URL before starting RhinoConnect web.'
-    );
-  }
+type StoredRecord<T extends DbRecord> = {
+  _id: string;
+  data: T;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
-  pool ??= new Pool({
-    connectionString: databaseUrl,
-    max: Number(process.env.RPC_DB_POOL_SIZE ?? 10),
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 8_000,
-    ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
+type MetaDocument = {
+  _id: string;
+  data: unknown;
+  updatedAt: Date;
+};
+
+type LockDocument = {
+  _id: string;
+  owner: string;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function databaseNameFromUri(uri: string) {
+  try {
+    const parsed = new URL(uri);
+    const pathName = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+    return pathName || 'rhinoconnect';
+  } catch {
+    return 'rhinoconnect';
+  }
+}
+
+function storageDb(client: MongoClient) {
+  return client.db(mongoDbName);
+}
+
+async function getMongoClient() {
+  if (mongoClient) return mongoClient;
+
+  mongoClientPromise ??= MongoClient.connect(mongoUri, {
+    maxPoolSize: Number(process.env.RPC_MONGODB_POOL_SIZE ?? 10),
+    minPoolSize: Number(process.env.RPC_MONGODB_MIN_POOL_SIZE ?? 0),
+    serverSelectionTimeoutMS: 8_000,
   });
 
-  return pool;
+  mongoClient = await mongoClientPromise;
+  return mongoClient;
 }
 
 function normalizeDb(db: AppDatabase): AppDatabase {
@@ -139,167 +169,205 @@ function cloneDb(db: AppDatabase): AppDatabase {
   return structuredClone(db);
 }
 
-function requireJson<T>(value: unknown): T {
-  return value as T;
+function metaCollection(db: Db) {
+  return db.collection<MetaDocument>('rpc_meta');
 }
 
-async function ensureSchema() {
-  schemaReady ??= (async () => {
-    const client = await getPool().connect();
-    try {
-      await client.query('BEGIN');
-      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [schemaLockKey]);
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS rpc_meta (
-          key TEXT PRIMARY KEY,
-          data JSONB NOT NULL,
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `);
+function lockCollection(db: Db) {
+  return db.collection<LockDocument>('rpc_locks');
+}
 
-      for (const table of collectionTables) {
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS ${table} (
-            id TEXT PRIMARY KEY,
-            data JSONB NOT NULL,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-          );
-        `);
-      }
+function recordsCollection<T extends DbRecord>(db: Db, collection: CollectionName) {
+  return db.collection<StoredRecord<T>>(collection);
+}
 
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_services_active_idx ON rpc_services ((data->>'active'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_services_type_idx ON rpc_services ((data->>'type'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_services_name_idx ON rpc_services ((lower(data->>'name')));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_ref_idx ON rpc_bookings ((data->>'bookingRef'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_customer_id_idx ON rpc_bookings ((data->>'customerId'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_service_id_idx ON rpc_bookings ((data->>'serviceId'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_check_in_idx ON rpc_bookings ((data->>'checkIn'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_check_out_idx ON rpc_bookings ((data->>'checkOut'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_status_idx ON rpc_bookings ((data->>'status'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_bookings_created_at_idx ON rpc_bookings ((data->>'createdAt'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_customers_email_idx ON rpc_customers ((lower(data->>'email')));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_customers_created_at_idx ON rpc_customers ((data->>'createdAt'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_payments_booking_ref_idx ON rpc_payments ((data->>'bookingRef'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_payments_status_idx ON rpc_payments ((data->>'status'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_payments_date_idx ON rpc_payments ((data->>'date'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_availability_service_idx ON rpc_availability_blocks ((data->>'serviceId'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_availability_start_idx ON rpc_availability_blocks ((data->>'startDate'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_notifications_read_idx ON rpc_notifications ((data->>'read'));");
-      await client.query("CREATE INDEX IF NOT EXISTS rpc_notifications_created_idx ON rpc_notifications ((data->>'createdAt'));");
+async function ensureIndexes() {
+  indexesReady ??= (async () => {
+    const db = storageDb(await getMongoClient());
 
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      schemaReady = null;
-      throw error;
-    } finally {
-      client.release();
-    }
+    await metaCollection(db).createIndex({ updatedAt: -1 });
+    await lockCollection(db).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 60 });
+
+    await recordsCollection(db, 'rpc_services').createIndexes([
+      { key: { 'data.active': 1 }, name: 'rpc_services_active_idx' },
+      { key: { 'data.type': 1 }, name: 'rpc_services_type_idx' },
+      { key: { 'data.name': 1 }, name: 'rpc_services_name_idx' },
+    ]);
+    await recordsCollection(db, 'rpc_bookings').createIndexes([
+      { key: { 'data.bookingRef': 1 }, name: 'rpc_bookings_ref_idx' },
+      { key: { 'data.customerId': 1 }, name: 'rpc_bookings_customer_id_idx' },
+      { key: { 'data.serviceId': 1 }, name: 'rpc_bookings_service_id_idx' },
+      { key: { 'data.checkIn': 1 }, name: 'rpc_bookings_check_in_idx' },
+      { key: { 'data.checkOut': 1 }, name: 'rpc_bookings_check_out_idx' },
+      { key: { 'data.status': 1 }, name: 'rpc_bookings_status_idx' },
+      { key: { 'data.paymentStatus': 1 }, name: 'rpc_bookings_payment_status_idx' },
+      { key: { 'data.createdAt': -1 }, name: 'rpc_bookings_created_at_idx' },
+    ]);
+    await recordsCollection(db, 'rpc_customers').createIndexes([
+      { key: { 'data.email': 1 }, name: 'rpc_customers_email_idx' },
+      { key: { 'data.createdAt': -1 }, name: 'rpc_customers_created_at_idx' },
+    ]);
+    await recordsCollection(db, 'rpc_payments').createIndexes([
+      { key: { 'data.bookingRef': 1 }, name: 'rpc_payments_booking_ref_idx' },
+      { key: { 'data.status': 1 }, name: 'rpc_payments_status_idx' },
+      { key: { 'data.date': -1 }, name: 'rpc_payments_date_idx' },
+    ]);
+    await recordsCollection(db, 'rpc_availability_blocks').createIndexes([
+      { key: { 'data.serviceId': 1 }, name: 'rpc_availability_service_idx' },
+      { key: { 'data.startDate': 1, 'data.endDate': 1 }, name: 'rpc_availability_range_idx' },
+    ]);
+    await recordsCollection(db, 'rpc_notifications').createIndexes([
+      { key: { 'data.read': 1 }, name: 'rpc_notifications_read_idx' },
+      { key: { 'data.createdAt': -1 }, name: 'rpc_notifications_created_idx' },
+    ]);
   })();
 
-  return schemaReady;
+  return indexesReady;
 }
 
-async function readJsonRows<T>(client: PoolClient, table: CollectionTable): Promise<T[]> {
-  const result = await client.query<{ data: T }>(`SELECT data FROM ${table}`);
-  return result.rows.map((row) => requireJson<T>(row.data));
+async function readRows<T extends DbRecord>(db: Db, collection: CollectionName): Promise<T[]> {
+  const rows = await recordsCollection<T>(db, collection).find({}, { projection: { data: 1 } }).toArray();
+  return rows.map((row) => row.data);
 }
 
-async function readDbFromClient(client: PoolClient, seedIfMissing: boolean): Promise<AppDatabase> {
-  const meta = await client.query<{ key: string; data: unknown }>("SELECT key, data FROM rpc_meta WHERE key IN ('version', 'business', 'updatedAt')");
-  const metaMap = new Map(meta.rows.map((row) => [row.key, row.data]));
+async function readDbFromMongo(db: Db, seedIfMissing: boolean): Promise<AppDatabase> {
+  const metaRows = await metaCollection(db)
+    .find({ _id: { $in: ['version', 'business', 'updatedAt'] } })
+    .toArray();
+  const metaMap = new Map(metaRows.map((row) => [row._id, row.data]));
 
   if (!metaMap.has('business')) {
-    if (!seedIfMissing) throw new Error('RhinoConnect PostgreSQL storage is not initialized.');
+    if (!seedIfMissing) throw new Error('RhinoConnect MongoDB storage is not initialized.');
     const seed = normalizeDb(createSeedDatabase());
-    await persistDbWithClient(client, seed);
+    await persistDbWithMongo(db, seed);
     return seed;
   }
 
   return normalizeDb({
     version: Number(metaMap.get('version') ?? 1),
-    business: requireJson<AppDatabase['business']>(metaMap.get('business')),
-    services: await readJsonRows(client, 'rpc_services'),
-    availabilityBlocks: await readJsonRows(client, 'rpc_availability_blocks'),
-    customers: await readJsonRows(client, 'rpc_customers'),
-    bookings: await readJsonRows(client, 'rpc_bookings'),
-    payments: await readJsonRows(client, 'rpc_payments'),
-    notifications: await readJsonRows(client, 'rpc_notifications'),
-    automations: await readJsonRows(client, 'rpc_automations'),
+    business: metaMap.get('business') as AppDatabase['business'],
+    services: await readRows(db, 'rpc_services'),
+    availabilityBlocks: await readRows(db, 'rpc_availability_blocks'),
+    customers: await readRows(db, 'rpc_customers'),
+    bookings: await readRows(db, 'rpc_bookings'),
+    payments: await readRows(db, 'rpc_payments'),
+    notifications: await readRows(db, 'rpc_notifications'),
+    automations: await readRows(db, 'rpc_automations'),
     updatedAt: String(metaMap.get('updatedAt') ?? new Date().toISOString()),
   });
 }
 
-async function upsertMeta(client: PoolClient, key: string, data: unknown) {
-  await client.query(
-    `
-      INSERT INTO rpc_meta (key, data, updated_at)
-      VALUES ($1, $2::jsonb, now())
-      ON CONFLICT (key)
-      DO UPDATE SET data = EXCLUDED.data, updated_at = now()
-    `,
-    [key, JSON.stringify(data)]
+async function upsertMeta(db: Db, key: string, data: unknown) {
+  await metaCollection(db).updateOne(
+    { _id: key },
+    {
+      $set: {
+        data,
+        updatedAt: new Date(),
+      },
+    },
+    { upsert: true }
   );
 }
 
-async function replaceCollection<T extends DbRecord>(client: PoolClient, table: CollectionTable, items: T[]) {
-  await client.query(`TRUNCATE TABLE ${table}`);
-  for (const item of items) {
-    await client.query(
-      `
-        INSERT INTO ${table} (id, data, updated_at)
-        VALUES ($1, $2::jsonb, now())
-        ON CONFLICT (id)
-        DO UPDATE SET data = EXCLUDED.data, updated_at = now()
-      `,
-      [item.id, JSON.stringify(item)]
+async function replaceCollection<T extends DbRecord>(db: Db, collection: CollectionName, items: T[]) {
+  const now = new Date();
+  const target = recordsCollection<T>(db, collection);
+  const ids = items.map((item) => item.id);
+
+  if (items.length > 0) {
+    await target.bulkWrite(
+      items.map((item) => ({
+        updateOne: {
+          filter: { _id: item.id },
+          update: {
+            $set: { data: item, updatedAt: now },
+            $setOnInsert: { createdAt: now },
+          },
+          upsert: true,
+        },
+      })),
+      { ordered: true }
     );
   }
+
+  await target.deleteMany(ids.length > 0 ? { _id: { $nin: ids } } : {});
 }
 
-async function persistDbWithClient(client: PoolClient, db: AppDatabase) {
-  await upsertMeta(client, 'version', db.version);
-  await upsertMeta(client, 'business', db.business);
-  await upsertMeta(client, 'updatedAt', db.updatedAt);
-  await replaceCollection(client, 'rpc_services', db.services);
-  await replaceCollection(client, 'rpc_availability_blocks', db.availabilityBlocks);
-  await replaceCollection(client, 'rpc_customers', db.customers);
-  await replaceCollection(client, 'rpc_bookings', db.bookings);
-  await replaceCollection(client, 'rpc_payments', db.payments);
-  await replaceCollection(client, 'rpc_notifications', db.notifications);
-  await replaceCollection(client, 'rpc_automations', db.automations);
+async function persistDbWithMongo(db: Db, appDb: AppDatabase) {
+  await replaceCollection(db, 'rpc_services', appDb.services);
+  await replaceCollection(db, 'rpc_availability_blocks', appDb.availabilityBlocks);
+  await replaceCollection(db, 'rpc_customers', appDb.customers);
+  await replaceCollection(db, 'rpc_bookings', appDb.bookings);
+  await replaceCollection(db, 'rpc_payments', appDb.payments);
+  await replaceCollection(db, 'rpc_notifications', appDb.notifications);
+  await replaceCollection(db, 'rpc_automations', appDb.automations);
+  await upsertMeta(db, 'version', appDb.version);
+  await upsertMeta(db, 'business', appDb.business);
+  await upsertMeta(db, 'updatedAt', appDb.updatedAt);
+}
+
+async function wait(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function acquireStorageLock(db: Db) {
+  const owner = `${process.pid}:${randomUUID()}`;
+  const startedAt = Date.now();
+  const locks = lockCollection(db);
+
+  while (Date.now() - startedAt < 10_000) {
+    const now = new Date();
+    const expiresAt = new Date(Date.now() + lockTtlMs);
+
+    try {
+      const result = await locks.updateOne(
+        {
+          _id: storageLockId,
+          $or: [{ expiresAt: { $lte: now } }, { owner }],
+        },
+        {
+          $set: { owner, expiresAt, updatedAt: now },
+          $setOnInsert: { createdAt: now },
+        },
+        { upsert: true }
+      );
+
+      if (result.modifiedCount > 0 || result.upsertedCount > 0) {
+        return async () => {
+          await locks.deleteOne({ _id: storageLockId, owner });
+        };
+      }
+    } catch (error) {
+      if ((error as { code?: number }).code !== 11000) throw error;
+    }
+
+    await wait(125);
+  }
+
+  throw new Error('Timed out waiting for RhinoConnect MongoDB storage lock.');
 }
 
 export async function readDb(): Promise<AppDatabase> {
-  await ensureSchema();
-  const client = await getPool().connect();
-  try {
-    return cloneDb(await readDbFromClient(client, true));
-  } finally {
-    client.release();
-  }
+  await ensureIndexes();
+  const db = storageDb(await getMongoClient());
+  return cloneDb(await readDbFromMongo(db, true));
 }
 
 export async function writeDb<T>(mutator: (db: AppDatabase) => Promise<T> | T): Promise<T> {
   const run = writeQueue.then(async () => {
-    await ensureSchema();
-    const client = await getPool().connect();
+    await ensureIndexes();
+    const db = storageDb(await getMongoClient());
+    const releaseLock = await acquireStorageLock(db);
 
     try {
-      await client.query('BEGIN');
-      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [schemaLockKey]);
-      const nextDb = cloneDb(await readDbFromClient(client, true));
+      const nextDb = cloneDb(await readDbFromMongo(db, true));
       const result = await mutator(nextDb);
       nextDb.updatedAt = new Date().toISOString();
-      await persistDbWithClient(client, nextDb);
-      await client.query('COMMIT');
+      await persistDbWithMongo(db, nextDb);
       return result;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
     } finally {
-      client.release();
+      await releaseLock();
     }
   });
 
@@ -312,14 +380,11 @@ export async function writeDb<T>(mutator: (db: AppDatabase) => Promise<T> | T): 
 }
 
 export function getDataFilePath() {
-  if (!databaseUrl) return 'postgresql://not-configured';
-
   try {
-    const url = new URL(databaseUrl);
+    const url = new URL(mongoUri);
     if (url.password) url.password = '***';
-    if (url.username) url.username = url.username ? `${url.username}` : '';
-    return url.toString();
+    return `${url.toString()}#db=${mongoDbName}`;
   } catch {
-    return 'postgresql://configured';
+    return `mongodb://configured#db=${mongoDbName}`;
   }
 }

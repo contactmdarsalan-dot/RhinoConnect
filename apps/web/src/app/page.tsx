@@ -182,7 +182,7 @@ export default function LandingPage() {
               The product is designed for subscription growth: businesses share their booking page, use the dashboard daily, and upgrade as automations and staff workflows become essential.
             </p>
             <div className="mt-8 space-y-4">
-              {['Vertical SaaS for tourism and hospitality', 'Public booking links that spread naturally', 'Backend ready to move from JSON to PostgreSQL'].map((item) => (
+              {['Vertical SaaS for tourism and hospitality', 'Public booking links that spread naturally', 'Backend ready to move from JSON to MongoDB'].map((item) => (
                 <div key={item} className="flex items-center gap-3 text-sm font-medium">
                   <CheckCircle2 size={17} className="text-[var(--success-text)]" />
                   {item}

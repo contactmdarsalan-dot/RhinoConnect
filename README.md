@@ -13,7 +13,7 @@ Smart Booking + Customer Engagement Platform for tourism, hospitality, and servi
 - Availability calendar with capacity blocks and override controls
 - Business settings, billing tier UI, and notification channel settings
 - Backend API routes for all major data workflows
-- PostgreSQL-backed web storage with schema bootstrap, indexed records, and serialized writes
+- MongoDB-backed web storage with automatic indexes, demo seeding, and serialized writes
 - Flutter customer mobile app scaffold with premium booking UX
 
 ## Repository Structure
@@ -50,14 +50,14 @@ npm run dev
 
 The root scripts currently run the `apps/web` workspace.
 
-The web app now requires PostgreSQL storage. Set one of these environment variables before running the app:
+The web app now uses MongoDB storage. Set one of these environment variables before running the app:
 
 ```powershell
-$env:RPC_DATABASE_URL="postgresql://rhinoconnect:password@localhost:5432/rhinoconnect"
+$env:RPC_MONGODB_URI="mongodb://127.0.0.1:27017/rhinoconnect"
 npm run dev
 ```
 
-`DATABASE_URL` or `POSTGRES_URL` are also supported. The storage adapter creates the required `rpc_*` tables and seeds the Himalaya Haven demo data on first run.
+`MONGODB_URI` or `MONGO_URL` are also supported. Use `RPC_MONGODB_DB` or `MONGODB_DB` to override the database name. The storage adapter creates the required `rpc_*` collections, builds indexes, and seeds the Himalaya Haven demo data on first run.
 
 Useful backend scripts:
 
@@ -84,7 +84,7 @@ Web app layers:
 
 - `apps/web/src/server/validation.ts`: Zod schemas for incoming API payloads
 - `apps/web/src/server/repository.ts`: business logic, analytics, availability checks, customer stats
-- `apps/web/src/server/storage.ts`: PostgreSQL storage adapter using `node-postgres`, `rpc_*` tables, JSONB records, query indexes, and advisory-lock serialized writes
+- `apps/web/src/server/storage.ts`: MongoDB storage adapter using the official driver, `rpc_*` collections, indexed records, and lock-protected serialized writes
 - `apps/web/src/server/seed.ts`: initial demo dataset and service catalog
 
 The web adapter is intentionally compatible with the current repository contract, so existing dashboard, booking, services, CRM, payments, availability, and public booking routes keep working while the storage layer moves from local demo files to production database infrastructure.
@@ -180,14 +180,14 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
 
 ## Scaling Path
 
-The MVP now uses PostgreSQL for the web app and Django API foundation. The next production scaling steps are:
+The MVP now uses MongoDB for the Next.js web app and the Django API foundation remains available for the marketplace backend. The next production scaling steps are:
 
-- Keep `apps/web/src/server/storage.ts` pointed at managed PostgreSQL through `RPC_DATABASE_URL`, `DATABASE_URL`, or `POSTGRES_URL`.
+- Keep `apps/web/src/server/storage.ts` pointed at managed MongoDB through `RPC_MONGODB_URI`, `MONGODB_URI`, or `MONGO_URL`.
 - The web storage adapter creates indexes for service type/name, customer email, booking ref, customer id, service id, check-in/check-out, status, payment status/date, notification read state, and created timestamps.
 - Put Redis in front of read-heavy dashboard aggregates and availability lookups.
 - Move automation delivery to a queue worker for WhatsApp, email, and reminders.
 - Add authentication, tenant isolation, and role-based access before real customer deployment.
-- Promote the hottest dashboard/report queries from JSONB adapter reads into dedicated SQL projections after the first live customer validates the workflow.
+- Promote the hottest dashboard/report queries from full-document adapter reads into targeted MongoDB repository queries after the first live customer validates the workflow.
 - Keep route pagination limits in place for memory efficiency under high traffic.
 
 ## Global Marketplace Roadmap
