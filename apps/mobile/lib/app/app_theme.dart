@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 
 class RhinoColors {
-  static const pine = Color(0xFF006B5A);
-  static const alpine = Color(0xFF102A2E);
-  static const cloud = Color(0xFFF5F8F6);
-  static const mist = Color(0xFFE8EFEB);
+  static const rhinoBlue = Color(0xFF183F78);
+  static const connectSilver = Color(0xFFB9BABD);
+  static const lime = Color(0xFFDFFF25);
+  static const pine = Color(0xFF062B22);
+  static const alpine = Color(0xFF0B2B31);
+  static const cloud = Color(0xFFF8F5EA);
+  static const brandCloud = Color(0xFFF7FAF4);
+  static const card = Color(0xFFFFFEF7);
+  static const mist = Color(0xFFE6E0D3);
   static const sky = Color(0xFFB9E7F5);
   static const saffron = Color(0xFFF4B740);
   static const coral = Color(0xFFE95D4F);
-  static const ink = Color(0xFF0B1B22);
-  static const slate = Color(0xFF52646B);
+  static const ink = Color(0xFF071811);
+  static const slate = Color(0xFF627168);
+  static const muted = Color(0xFFF0ECE0);
 }
 
 class AppTheme {
@@ -19,8 +25,8 @@ class AppTheme {
       brightness: Brightness.light,
     ).copyWith(
       primary: RhinoColors.pine,
-      secondary: RhinoColors.saffron,
-      surface: const Color(0xFFFBFCFA),
+      secondary: RhinoColors.lime,
+      surface: RhinoColors.card,
       error: RhinoColors.coral,
     );
 
@@ -30,10 +36,10 @@ class AppTheme {
       scaffoldBackgroundColor: RhinoColors.cloud,
       fontFamily: 'Roboto',
       textTheme: const TextTheme(
-        displaySmall: TextStyle(fontSize: 34, height: 1.05, fontWeight: FontWeight.w800, color: RhinoColors.ink),
-        headlineMedium: TextStyle(fontSize: 26, height: 1.12, fontWeight: FontWeight.w800, color: RhinoColors.ink),
-        titleLarge: TextStyle(fontSize: 20, height: 1.2, fontWeight: FontWeight.w800, color: RhinoColors.ink),
-        titleMedium: TextStyle(fontSize: 16, height: 1.25, fontWeight: FontWeight.w700, color: RhinoColors.ink),
+        displaySmall: TextStyle(fontSize: 34, height: 1.02, fontWeight: FontWeight.w900, color: RhinoColors.ink),
+        headlineMedium: TextStyle(fontSize: 28, height: 1.08, fontWeight: FontWeight.w900, color: RhinoColors.ink),
+        titleLarge: TextStyle(fontSize: 21, height: 1.16, fontWeight: FontWeight.w900, color: RhinoColors.ink),
+        titleMedium: TextStyle(fontSize: 16, height: 1.25, fontWeight: FontWeight.w800, color: RhinoColors.ink),
         bodyLarge: TextStyle(fontSize: 16, height: 1.5, fontWeight: FontWeight.w400, color: RhinoColors.ink),
         bodyMedium: TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w400, color: RhinoColors.slate),
         labelLarge: TextStyle(fontSize: 14, height: 1.2, fontWeight: FontWeight.w700, color: RhinoColors.ink),
@@ -47,28 +53,28 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFFBFCFA),
+        fillColor: RhinoColors.card,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: RhinoColors.mist)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: RhinoColors.mist)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: RhinoColors.pine, width: 1.4)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(26), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(26), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(26), borderSide: const BorderSide(color: RhinoColors.pine, width: 1.3)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(58),
           elevation: 0,
           backgroundColor: RhinoColors.pine,
-          foregroundColor: const Color(0xFFF7FBF8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          foregroundColor: RhinoColors.brandCloud,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(56),
           foregroundColor: RhinoColors.ink,
           side: const BorderSide(color: RhinoColors.mist),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
       ),
@@ -76,7 +82,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         side: BorderSide.none,
         selectedColor: RhinoColors.sky,
-        backgroundColor: const Color(0xFFEFF3F0),
+        backgroundColor: RhinoColors.muted,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: RhinoColors.ink),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -84,10 +90,10 @@ class AppTheme {
         elevation: 0,
         backgroundColor: const Color(0xFFFBFCFA),
         indicatorColor: RhinoColors.sky,
-        labelTextStyle: MaterialStateProperty.resolveWith(
+        labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             fontSize: 12,
-            fontWeight: states.contains(MaterialState.selected) ? FontWeight.w800 : FontWeight.w600,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
       ),

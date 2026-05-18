@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../core/api/api_client.dart';
@@ -11,6 +10,8 @@ class AppState extends ChangeNotifier {
   final ApiClient apiClient;
 
   UserProfile? currentUser;
+  bool splashComplete = false;
+  bool onboardingComplete = false;
   int tabIndex = 0;
   String category = 'All';
   String searchQuery = '';
@@ -18,6 +19,16 @@ class AppState extends ChangeNotifier {
   final List<CustomerBooking> bookings = [];
 
   bool get isAuthenticated => currentUser != null;
+
+  void completeSplash() {
+    splashComplete = true;
+    notifyListeners();
+  }
+
+  void completeOnboarding() {
+    onboardingComplete = true;
+    notifyListeners();
+  }
 
   List<String> get categories => ['All', ...services.map((service) => service.category).toSet()];
 
@@ -75,7 +86,7 @@ class AppState extends ChangeNotifier {
       paymentStatus: 'Unpaid',
     );
     bookings.insert(0, booking);
-    tabIndex = 1;
+    tabIndex = 3;
     notifyListeners();
     return booking;
   }

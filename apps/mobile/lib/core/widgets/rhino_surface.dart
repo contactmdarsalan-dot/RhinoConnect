@@ -7,7 +7,8 @@ class RhinoSurface extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(18),
     this.margin = EdgeInsets.zero,
-    this.color = const Color(0xFFFBFCFA),
+    this.color = RhinoColors.card,
+    this.borderRadius = 24,
     super.key,
   });
 
@@ -15,6 +16,7 @@ class RhinoSurface extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
   final Color color;
+  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +25,11 @@ class RhinoSurface extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: RhinoColors.mist),
         boxShadow: [
           BoxShadow(
-            color: RhinoColors.alpine.withOpacity(0.05),
+            color: RhinoColors.alpine.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
