@@ -12,6 +12,9 @@
     "lint": "npm run lint --workspace @rhinoconnect/web",
     "web:dev": "npm run dev --workspace @rhinoconnect/web",
     "web:build": "npm run build --workspace @rhinoconnect/web",
-    "web:lint": "npm run lint --workspace @rhinoconnect/web"
+    "web:lint": "npm run lint --workspace @rhinoconnect/web",
+    "api:check": "cd services/api && python manage.py check",
+    "api:migrate": "cd services/api && python manage.py migrate",
+    "api:dev": "cd services/api && python manage.py runserver 8000"
   }
 }

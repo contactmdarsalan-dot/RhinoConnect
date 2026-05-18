@@ -53,6 +53,8 @@ Done means:
 
 ## Step 3: Build Django API Foundation
 
+Status: done.
+
 Goal: create the production backend base.
 
 Deliverables:

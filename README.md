@@ -22,7 +22,7 @@ apps/
   web/                  # Current Next.js provider/admin and public booking app
   mobile/               # Flutter app placeholder for the marketplace phase
 services/
-  api/                  # Django API placeholder
+  api/                  # Django REST API foundation
   worker/               # Celery worker placeholder
 packages/
   contracts/            # Shared API contract placeholder
@@ -49,6 +49,14 @@ npm run dev
 
 The root scripts currently run the `apps/web` workspace.
 
+Useful backend scripts:
+
+```bash
+npm run api:check
+npm run api:migrate
+npm run api:dev
+```
+
 Open:
 
 - Admin login: `http://localhost:3000`
@@ -60,7 +68,7 @@ Demo login is pre-filled on the home page.
 
 ## Backend Architecture
 
-The backend uses Next.js route handlers under `src/app/api`.
+The current web MVP backend uses Next.js route handlers under `apps/web/src/app/api`.
 
 Web app layers:
 
@@ -76,6 +84,36 @@ apps/web/data/rhinopeak-connect.json
 ```
 
 Set `RPC_DATA_DIR` to move local storage elsewhere.
+
+## Django API Foundation
+
+The marketplace backend foundation lives in `services/api`.
+
+It includes:
+
+- Django REST Framework setup
+- Custom user roles
+- Provider profiles
+- Categories
+- Service listings and media
+- Availability rules and blocks
+- Bookings
+- Payments and payouts
+- Reviews
+- Notifications
+- Admin panel registration
+- Health endpoint at `/api/v1/health/`
+- OpenAPI schema at `/api/schema/`
+- Swagger UI at `/api/docs/`
+
+Local setup:
+
+```bash
+cd services/api
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver 8000
+```
 
 ## Main API Routes
 
