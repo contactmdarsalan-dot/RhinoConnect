@@ -81,6 +81,8 @@ Done means:
 
 ## Step 4: Build Marketplace APIs
 
+Status: done.
+
 Goal: expose real marketplace workflows.
 
 Deliverables:
@@ -99,6 +101,17 @@ Done means:
 - A customer can find a service and create a booking
 - A provider can accept or reject it
 - API validation prevents invalid data
+
+Implemented:
+
+- Token-based customer registration, login, and profile endpoint
+- Public category, provider, service, media, and review endpoints
+- Provider-owned service and media CRUD
+- Customer booking request creation with capacity validation
+- Provider/customer booking status workflow
+- Review submission for completed bookings
+- Authenticated payment, payout, and notification read endpoints
+- API smoke tests for discovery, booking, status updates, and reviews
 
 ## Step 5: Add Payments
 

@@ -87,7 +87,7 @@ Set `RPC_DATA_DIR` to move local storage elsewhere.
 
 ## Django API Foundation
 
-The marketplace backend foundation lives in `services/api`.
+The marketplace backend lives in `services/api`.
 
 It includes:
 
@@ -96,6 +96,10 @@ It includes:
 - Provider profiles
 - Categories
 - Service listings and media
+- Token-based customer registration and login
+- Public marketplace discovery APIs
+- Provider-owned service and media CRUD
+- Booking request and status workflow
 - Availability rules and blocks
 - Bookings
 - Payments and payouts
@@ -114,6 +118,19 @@ python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver 8000
 ```
+
+Key marketplace endpoints:
+
+- `POST /api/v1/auth/register/`
+- `POST /api/v1/auth/login/`
+- `GET/PATCH /api/v1/auth/me/`
+- `GET /api/v1/categories/`
+- `GET/POST /api/v1/providers/`
+- `GET/POST /api/v1/services/`
+- `GET/POST /api/v1/service-media/`
+- `GET/POST /api/v1/bookings/`
+- `POST /api/v1/bookings/{id}/set-status/`
+- `GET/POST /api/v1/reviews/`
 
 ## Main API Routes
 
