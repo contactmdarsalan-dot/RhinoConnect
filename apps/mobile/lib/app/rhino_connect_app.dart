@@ -96,7 +96,7 @@ class _RhinoBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 82,
+      height: 86,
       decoration: BoxDecoration(
         color: RhinoColors.pine,
         borderRadius: BorderRadius.circular(30),
@@ -184,14 +184,14 @@ class _CenterNavItem extends StatelessWidget {
           onTap: onTap,
           child: Center(
             child: Transform.translate(
-              offset: const Offset(0, -18),
+              offset: const Offset(0, -14),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: selected ? 68 : 64,
-                    height: selected ? 68 : 64,
+                    width: selected ? 64 : 60,
+                    height: selected ? 64 : 60,
                     decoration: BoxDecoration(
                       color: RhinoColors.lime,
                       shape: BoxShape.circle,

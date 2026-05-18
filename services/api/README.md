@@ -5,7 +5,7 @@ Django REST Framework backend for the global local-services marketplace.
 ## Included
 
 - Django project configuration
-- SQLite local default with PostgreSQL-ready `DATABASE_URL`
+- Optional PostgreSQL-ready relational API through `DATABASE_URL`
 - Custom user model with marketplace roles
 - Provider profiles
 - Categories
@@ -36,9 +36,12 @@ cd services/api
 python -m venv .venv
 .venv\Scripts\activate
 python -m pip install -r requirements.txt
+$env:DATABASE_URL="postgresql://rhinoconnect:password@localhost:5432/rhinoconnect"
 python manage.py migrate
 python manage.py runserver 8000
 ```
+
+The primary RhinoConnect web and mobile product uses the MongoDB-backed Next.js API in `apps/web`. This Django API is kept as an optional relational backend and no longer creates a local file database by default.
 
 Health check:
 

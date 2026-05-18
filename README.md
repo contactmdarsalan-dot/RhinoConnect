@@ -23,7 +23,7 @@ apps/
   web/                  # Current Next.js provider/admin and public booking app
   mobile/               # Flutter customer app source
 services/
-  api/                  # Django REST API
+  api/                  # Optional Django REST API
   worker/               # Celery worker placeholder
 packages/
   contracts/            # Shared API contract placeholder
@@ -59,7 +59,7 @@ npm run dev
 
 `MONGODB_URI` or `MONGO_URL` are also supported. Use `RPC_MONGODB_DB` or `MONGODB_DB` to override the database name. The storage adapter creates the required `rpc_*` collections, builds indexes, and seeds the Himalaya Haven demo data on first run.
 
-Useful backend scripts:
+Optional Django relational API scripts require `DATABASE_URL`:
 
 ```bash
 npm run api:check
@@ -89,9 +89,11 @@ Web app layers:
 
 The web adapter is intentionally compatible with the current repository contract, so existing dashboard, booking, services, CRM, payments, availability, and public booking routes keep working while the storage layer moves from local demo files to production database infrastructure.
 
-## Django API Foundation
+Mobile-facing API routes live under `apps/web/src/app/api/v1` and use the same MongoDB storage layer.
 
-The marketplace backend lives in `services/api`.
+## Optional Django API
+
+An optional relational marketplace backend lives in `services/api`. The active web and mobile product uses the MongoDB-backed Next.js API.
 
 It includes:
 
@@ -119,6 +121,7 @@ Local setup:
 ```bash
 cd services/api
 python -m pip install -r requirements.txt
+$env:DATABASE_URL="postgresql://rhinoconnect:password@localhost:5432/rhinoconnect"
 python manage.py migrate
 python manage.py runserver 8000
 ```
@@ -157,8 +160,10 @@ Run after installing Flutter:
 ```bash
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 ```
+
+The mobile app now uses the MongoDB-backed Next.js API for registration, login, service discovery, booking creation, and test deposit payments. New mobile accounts are stored through `POST /api/v1/auth/register` in MongoDB.
 
 ## Main API Routes
 
@@ -177,13 +182,20 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
 - `GET/PATCH /api/settings`
 - `GET /api/public/business/:slug`
 - `POST /api/public/bookings`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+- `GET /api/v1/services`
+- `GET/POST /api/v1/bookings`
+- `POST /api/v1/payments/intents`
+- `POST /api/v1/payments/:id/mark-succeeded`
 
 ## Scaling Path
 
-The MVP now uses MongoDB for the Next.js web app and the Django API foundation remains available for the marketplace backend. The next production scaling steps are:
+The MVP now uses MongoDB for the Next.js web and mobile APIs, while the Django API remains optional for future relational deployments. The next production scaling steps are:
 
 - Keep `apps/web/src/server/storage.ts` pointed at managed MongoDB through `RPC_MONGODB_URI`, `MONGODB_URI`, or `MONGO_URL`.
-- The web storage adapter creates indexes for service type/name, customer email, booking ref, customer id, service id, check-in/check-out, status, payment status/date, notification read state, and created timestamps.
+- The MongoDB storage adapter creates indexes for mobile users, service type/name, customer email, booking ref, customer id, service id, check-in/check-out, status, payment status/date, notification read state, and created timestamps.
 - Put Redis in front of read-heavy dashboard aggregates and availability lookups.
 - Move automation delivery to a queue worker for WhatsApp, email, and reminders.
 - Add authentication, tenant isolation, and role-based access before real customer deployment.

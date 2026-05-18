@@ -21,6 +21,7 @@ class _BookingScreenState extends State<BookingScreen> {
   final _country = TextEditingController(text: 'Nepal');
   final _notes = TextEditingController();
   int _guests = 1;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -33,6 +34,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     final service = widget.service;
     final deposit = service.basePrice * service.depositPercent / 100;
+    final preview = service.cover?.thumbnailUrl ?? service.cover?.url;
 
     return Scaffold(
       appBar: AppBar(
@@ -52,7 +54,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   child: SizedBox(
                     width: 86,
                     height: 86,
-                    child: RemoteImage(url: service.cover?.thumbnailUrl ?? service.cover!.url),
+                    child: preview == null ? Container(color: RhinoColors.rhinoBlue) : RemoteImage(url: preview),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -161,9 +163,9 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: ElevatedButton.icon(
-            onPressed: _submit,
+            onPressed: _submitting ? null : _submit,
             icon: const Icon(Icons.send_rounded),
-            label: const Text('Send booking request'),
+            label: Text(_submitting ? 'Sending request...' : 'Send booking request'),
           ),
         ),
       ),
@@ -191,19 +193,28 @@ class _BookingScreenState extends State<BookingScreen> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final state = AppStateScope.of(context);
-    state.createBooking(
-      BookingDraft(
-        service: widget.service,
-        startDate: _startDate,
-        endDate: _endDate,
-        guests: _guests,
-        country: _country.text.trim(),
-        notes: _notes.text.trim(),
-      ),
-    );
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _submitting = true);
+    try {
+      await state.createBooking(
+        BookingDraft(
+          service: widget.service,
+          startDate: _startDate,
+          endDate: _endDate,
+          guests: _guests,
+          country: _country.text.trim(),
+          notes: _notes.text.trim(),
+        ),
+      );
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.lastError ?? error.toString())));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 }
 

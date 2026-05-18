@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_theme.dart';
-import '../../core/data/demo_data.dart';
 import '../../core/widgets/rhino_brand.dart';
 import '../../core/widgets/remote_image.dart';
 
@@ -180,28 +179,28 @@ class _OnboardingData {
 }
 
 final _pages = [
-  _OnboardingData(
+  const _OnboardingData(
     badge: 'Verified Nepal providers',
     title: 'Find trusted stays, treks, and retreats.',
     subtitle: 'Explore services with real media, ratings, deposits, and host confirmation before you commit.',
-    imageUrl: DemoData.services[1].cover!.url,
-    chips: const ['Hotels', 'Trekking', 'Wellness'],
+    imageUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1400&q=80',
+    chips: ['Hotels', 'Trekking', 'Wellness'],
     buttonLabel: 'Next',
   ),
-  _OnboardingData(
+  const _OnboardingData(
     badge: 'Media before booking',
     title: 'Preview every service with images and video.',
     subtitle: 'Open full-screen galleries, check walkthroughs, and understand the experience before sending a request.',
-    imageUrl: DemoData.services[0].media[1].thumbnailUrl!,
-    chips: const ['Photos', 'Video', 'Provider profile'],
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    chips: ['Photos', 'Video', 'Provider profile'],
     buttonLabel: 'Next',
   ),
-  _OnboardingData(
+  const _OnboardingData(
     badge: 'Simple request flow',
     title: 'Book calmly and track every trip.',
     subtitle: 'Your request stays pending until the operator confirms availability, then deposits and updates stay in one place.',
-    imageUrl: DemoData.services[2].cover!.url,
-    chips: const ['Request', 'Confirm', 'Pay deposit'],
+    imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80',
+    chips: ['Request', 'Confirm', 'Pay deposit'],
     buttonLabel: 'Start booking',
   ),
 ];

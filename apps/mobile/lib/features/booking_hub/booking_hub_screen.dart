@@ -16,7 +16,7 @@ class BookingHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
     final services = state.services;
-    final featured = services.first;
+    final featured = services.isNotEmpty ? services.first : null;
 
     return Scaffold(
       body: SafeArea(
@@ -34,11 +34,26 @@ class BookingHubScreen extends StatelessWidget {
             const SizedBox(height: 6),
             Text('Choose a verified service and send a booking request in minutes.', style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 18),
-            _FeaturedBooking(
-              service: featured,
-              onDetails: () => _openService(context, featured),
-              onBook: () => _openBooking(context, featured),
-            ),
+            if (state.loadingServices)
+              const _BookingHubStatus(
+                icon: Icons.sync_rounded,
+                title: 'Loading live services',
+                message: 'RhinoConnect is fetching the current service catalog from the API.',
+              )
+            else if (featured == null)
+              _BookingHubStatus(
+                icon: Icons.inventory_2_outlined,
+                title: 'No services published yet',
+                message: 'Seed the API or create services from the provider dashboard, then they will appear here automatically.',
+                actionLabel: 'Search',
+                onAction: () => state.setTab(1),
+              )
+            else
+              _FeaturedBooking(
+                service: featured,
+                onDetails: () => _openService(context, featured),
+                onBook: () => _openBooking(context, featured),
+              ),
             const SizedBox(height: 20),
             Text('Fast actions', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
@@ -59,16 +74,17 @@ class BookingHubScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            ...services.map(
-              (service) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _BookableService(
-                  service: service,
-                  onView: () => _openService(context, service),
-                  onBook: () => _openBooking(context, service),
+            if (services.isNotEmpty)
+              ...services.map(
+                (service) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _BookableService(
+                    service: service,
+                    onView: () => _openService(context, service),
+                    onBook: () => _openBooking(context, service),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -102,6 +118,8 @@ class _FeaturedBooking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preview = service.cover?.thumbnailUrl ?? service.cover?.url;
+
     return Container(
       decoration: BoxDecoration(
         color: RhinoColors.rhinoBlue,
@@ -118,7 +136,7 @@ class _FeaturedBooking extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  RemoteImage(url: service.cover?.thumbnailUrl ?? service.cover!.url),
+                  if (preview == null) Container(color: RhinoColors.rhinoBlue) else RemoteImage(url: preview),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -234,6 +252,8 @@ class _BookableService extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preview = service.cover?.thumbnailUrl ?? service.cover?.url;
+
     return RhinoSurface(
       borderRadius: 28,
       padding: const EdgeInsets.all(12),
@@ -246,7 +266,7 @@ class _BookableService extends StatelessWidget {
               child: SizedBox(
                 width: 78,
                 height: 78,
-                child: RemoteImage(url: service.cover?.thumbnailUrl ?? service.cover!.url),
+                child: preview == null ? Container(color: RhinoColors.mist) : RemoteImage(url: preview),
               ),
             ),
           ),
@@ -280,6 +300,55 @@ class _BookableService extends StatelessWidget {
             style: IconButton.styleFrom(backgroundColor: RhinoColors.lime, foregroundColor: RhinoColors.pine),
             icon: const Icon(Icons.arrow_forward_rounded),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookingHubStatus extends StatelessWidget {
+  const _BookingHubStatus({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return RhinoSurface(
+      borderRadius: 30,
+      color: RhinoColors.muted,
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(color: RhinoColors.card, borderRadius: BorderRadius.circular(18)),
+            child: Icon(icon, color: RhinoColors.pine),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(message, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 10),
+            OutlinedButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
         ],
       ),
     );

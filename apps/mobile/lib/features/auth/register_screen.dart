@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _password = TextEditingController(text: 'StrongPass123!');
   final _country = TextEditingController(text: 'Nepal');
   bool _showPassword = false;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -96,7 +97,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: const InputDecoration(labelText: 'Country', prefixIcon: Icon(Icons.public_rounded)),
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(onPressed: _submit, child: const Text('Create account')),
+                  ElevatedButton(
+                    onPressed: _submitting ? null : _submit,
+                    child: Text(_submitting ? 'Creating account...' : 'Create account'),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'By continuing, you agree to secure booking requests and provider confirmation before payment.',
@@ -125,9 +129,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final state = AppStateScope.of(context);
-    state.register(name: _name.text.trim(), email: _email.text.trim(), country: _country.text.trim());
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _submitting = true);
+    try {
+      await state.register(
+        name: _name.text.trim(),
+        email: _email.text.trim(),
+        password: _password.text,
+        country: _country.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.lastError ?? error.toString())));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 }

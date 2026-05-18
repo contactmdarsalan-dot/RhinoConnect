@@ -30,6 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .next-dev*.log
+.next-run-logs/
+mobile-mongodb-api-screenshot.png
 
 # local app data
 data/

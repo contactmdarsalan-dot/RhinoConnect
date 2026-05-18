@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_theme.dart';
-import '../../core/data/demo_data.dart';
 import '../../core/widgets/remote_image.dart';
 import '../../core/widgets/rhino_brand.dart';
 import '../../core/widgets/rhino_surface.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+
+const _authHeroImageUrl = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1400&q=80';
 
 class AuthWelcomeScreen extends StatelessWidget {
   const AuthWelcomeScreen({super.key});
@@ -14,7 +15,6 @@ class AuthWelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final hero = DemoData.services[1];
 
     return Scaffold(
       body: SafeArea(
@@ -30,7 +30,7 @@ class AuthWelcomeScreen extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    RemoteImage(url: hero.cover!.url),
+                    const RemoteImage(url: _authHeroImageUrl),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

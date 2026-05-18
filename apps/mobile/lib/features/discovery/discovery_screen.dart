@@ -16,7 +16,7 @@ class DiscoveryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
     final services = state.visibleServices;
-    final featured = services.isNotEmpty ? services.first : state.services.first;
+    final featured = services.isNotEmpty ? services.first : null;
     final name = state.currentUser?.name.split(' ').first ?? 'Traveler';
 
     return Scaffold(
@@ -49,11 +49,16 @@ class DiscoveryScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _SearchBar(onChanged: state.setSearchQuery),
                     const SizedBox(height: 18),
-                    _FeaturedCard(
-                      service: featured,
-                      onTap: () => _openService(context, featured),
-                    ),
-                    const SizedBox(height: 16),
+                    if (state.loadingServices) ...[
+                      const _LoadingServices(),
+                      const SizedBox(height: 16),
+                    ] else if (featured != null) ...[
+                      _FeaturedCard(
+                        service: featured,
+                        onTap: () => _openService(context, featured),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     SizedBox(
                       height: 46,
                       child: ListView.separated(
@@ -77,12 +82,12 @@ class DiscoveryScreen extends StatelessWidget {
                 ),
               ),
             ),
-            if (services.isEmpty)
+            if (services.isEmpty && !state.loadingServices)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: _EmptySearch(onClear: () => state.setSearchQuery('')),
               )
-            else
+            else if (services.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 122),
                 sliver: SliverList.separated(
@@ -93,7 +98,9 @@ class DiscoveryScreen extends StatelessWidget {
                     return ServiceCard(service: service, onTap: () => _openService(context, service));
                   },
                 ),
-              ),
+              )
+            else
+              const SliverToBoxAdapter(child: SizedBox.shrink()),
           ],
         ),
       ),
@@ -102,6 +109,25 @@ class DiscoveryScreen extends StatelessWidget {
 
   void _openService(BuildContext context, ServiceListing service) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
+  }
+}
+
+class _LoadingServices extends StatelessWidget {
+  const _LoadingServices();
+
+  @override
+  Widget build(BuildContext context) {
+    return RhinoSurface(
+      borderRadius: 30,
+      color: RhinoColors.muted,
+      child: Row(
+        children: [
+          const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3)),
+          const SizedBox(width: 14),
+          Expanded(child: Text('Loading live services from the API...', style: Theme.of(context).textTheme.titleMedium)),
+        ],
+      ),
+    );
   }
 }
 

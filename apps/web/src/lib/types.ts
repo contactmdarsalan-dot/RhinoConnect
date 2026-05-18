@@ -101,6 +101,18 @@ export interface Customer {
   notes?: string;
 }
 
+export interface MobileUser {
+  id: string;
+  name: string;
+  email: string;
+  country: string;
+  customerId: string;
+  passwordHash: string;
+  passwordSalt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Booking {
   id: string;
   bookingRef: string;

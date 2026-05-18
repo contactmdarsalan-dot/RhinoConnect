@@ -3,6 +3,7 @@ import type {
   AvailabilityBlock,
   BootstrapPayload,
   BusinessProfile,
+  MobileUser,
   ServiceOffering,
 } from '@/lib/types';
 import {
@@ -15,6 +16,7 @@ import {
 
 export type AppDatabase = Omit<BootstrapPayload, 'dashboard' | 'availability'> & {
   version: number;
+  mobileUsers: MobileUser[];
 };
 
 const now = new Date().toISOString();
@@ -256,6 +258,7 @@ export function createSeedDatabase(): AppDatabase {
     payments,
     notifications,
     automations: seedAutomations,
+    mobileUsers: [],
     updatedAt: now,
   };
 }

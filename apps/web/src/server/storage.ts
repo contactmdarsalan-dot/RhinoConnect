@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { MongoClient, type Db } from 'mongodb';
-import type { ServiceMedia } from '@/lib/types';
+import type { MobileUser, ServiceMedia } from '@/lib/types';
 import { createSeedDatabase, type AppDatabase } from './seed';
 
 const mongoUri =
@@ -99,7 +99,8 @@ type CollectionName =
   | 'rpc_bookings'
   | 'rpc_payments'
   | 'rpc_notifications'
-  | 'rpc_automations';
+  | 'rpc_automations'
+  | 'rpc_mobile_users';
 type DbRecord = { id: string };
 
 type StoredRecord<T extends DbRecord> = {
@@ -207,6 +208,11 @@ async function ensureIndexes() {
       { key: { 'data.email': 1 }, name: 'rpc_customers_email_idx' },
       { key: { 'data.createdAt': -1 }, name: 'rpc_customers_created_at_idx' },
     ]);
+    await recordsCollection<MobileUser>(db, 'rpc_mobile_users').createIndexes([
+      { key: { 'data.email': 1 }, name: 'rpc_mobile_users_email_idx', unique: true },
+      { key: { 'data.customerId': 1 }, name: 'rpc_mobile_users_customer_id_idx' },
+      { key: { 'data.createdAt': -1 }, name: 'rpc_mobile_users_created_at_idx' },
+    ]);
     await recordsCollection(db, 'rpc_payments').createIndexes([
       { key: { 'data.bookingRef': 1 }, name: 'rpc_payments_booking_ref_idx' },
       { key: { 'data.status': 1 }, name: 'rpc_payments_status_idx' },
@@ -253,6 +259,7 @@ async function readDbFromMongo(db: Db, seedIfMissing: boolean): Promise<AppDatab
     payments: await readRows(db, 'rpc_payments'),
     notifications: await readRows(db, 'rpc_notifications'),
     automations: await readRows(db, 'rpc_automations'),
+    mobileUsers: await readRows(db, 'rpc_mobile_users'),
     updatedAt: String(metaMap.get('updatedAt') ?? new Date().toISOString()),
   });
 }
@@ -302,6 +309,7 @@ async function persistDbWithMongo(db: Db, appDb: AppDatabase) {
   await replaceCollection(db, 'rpc_payments', appDb.payments);
   await replaceCollection(db, 'rpc_notifications', appDb.notifications);
   await replaceCollection(db, 'rpc_automations', appDb.automations);
+  await replaceCollection(db, 'rpc_mobile_users', appDb.mobileUsers);
   await upsertMeta(db, 'version', appDb.version);
   await upsertMeta(db, 'business', appDb.business);
   await upsertMeta(db, 'updatedAt', appDb.updatedAt);

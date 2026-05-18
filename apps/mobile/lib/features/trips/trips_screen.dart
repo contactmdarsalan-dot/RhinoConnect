@@ -115,6 +115,7 @@ class _BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
+    final preview = booking.service.cover?.thumbnailUrl ?? booking.service.cover?.url;
 
     return RhinoSurface(
       borderRadius: 30,
@@ -130,7 +131,7 @@ class _BookingCard extends StatelessWidget {
                 child: SizedBox(
                   width: 78,
                   height: 78,
-                  child: RemoteImage(url: booking.service.cover?.thumbnailUrl ?? booking.service.cover!.url),
+                  child: preview == null ? Container(color: RhinoColors.mist) : RemoteImage(url: preview),
                 ),
               ),
               const SizedBox(width: 12),
@@ -166,7 +167,14 @@ class _BookingCard extends StatelessWidget {
           if (booking.paymentStatus == 'Unpaid') ...[
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () => state.markDepositPaid(booking.reference),
+              onPressed: () async {
+                try {
+                  await state.markDepositPaid(booking.reference);
+                } catch (error) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.lastError ?? error.toString())));
+                }
+              },
               icon: const Icon(Icons.payments_outlined),
               label: Text('Pay ${booking.service.depositPercent}% deposit'),
             ),

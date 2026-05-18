@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,10 +24,10 @@ def env_list(name: str, default: str = "") -> list[str]:
 def database_config():
     database_url = os.getenv("DATABASE_URL", "").strip()
     if not database_url:
-        return {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+        raise ImproperlyConfigured(
+            "DATABASE_URL is required for the optional Django API. "
+            "The primary RhinoConnect web/mobile backend uses MongoDB through apps/web."
+        )
 
     parsed = urlparse(database_url)
     return {

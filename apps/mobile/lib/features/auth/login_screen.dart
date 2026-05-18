@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController(text: 'arjun@example.com');
   final _password = TextEditingController(text: 'StrongPass123!');
   bool _showPassword = false;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -83,7 +84,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(onPressed: () {}, child: const Text('Forgot password?')),
                   ),
                   const SizedBox(height: 4),
-                  ElevatedButton(onPressed: _submit, child: const Text('Continue')),
+                  ElevatedButton(
+                    onPressed: _submitting ? null : _submit,
+                    child: Text(_submitting ? 'Signing in...' : 'Continue'),
+                  ),
                 ],
               ),
             ),
@@ -106,9 +110,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final state = AppStateScope.of(context);
-    state.signIn(email: _email.text.trim(), password: _password.text);
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _submitting = true);
+    try {
+      await state.signIn(email: _email.text.trim(), password: _password.text);
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.lastError ?? error.toString())));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 }

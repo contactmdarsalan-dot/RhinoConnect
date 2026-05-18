@@ -13,7 +13,7 @@ Premium Flutter customer app for the RhinoConnect local-services marketplace.
 - Booking request flow
 - Trip history and deposit action
 - Profile and account settings shell
-- API-ready client configured for the Django backend
+- API client configured for the MongoDB-backed Next.js backend
 
 ## Run
 
@@ -22,7 +22,7 @@ Install Flutter, then run:
 ```bash
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 ```
 
 Use `10.0.2.2` for Android emulator access to localhost. Use your machine IP for a physical phone.
@@ -33,8 +33,7 @@ The mobile app is designed as a calm premium marketplace for travelers booking u
 
 ## Next Mobile Steps
 
-- Connect auth screens to `/api/v1/auth/register/` and `/api/v1/auth/login/`
-- Load live categories and services from `/api/v1/services/`
-- Submit bookings to `/api/v1/bookings/`
-- Create payment intents through `/api/v1/payments/intents/`
+- Harden token refresh and password reset
+- Add saved providers and favorite services
+- Add provider chat after customer booking works end to end
 - Add provider app flows after customer booking works end to end
